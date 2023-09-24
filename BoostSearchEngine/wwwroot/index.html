@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Boost 搜索引擎</title>
+    <style>
+        /*去掉网页中所有的内外边距*/
+        * {
+            margin: 0;
+            /*设置外边距*/
+            padding: 0;
+            /*设置内边距*/
+        }
+
+        html,
+        body {
+            /*将body的内容100%与网页的呈现吻合*/
+            height: 100%;
+        }
+
+        /* 类选择器 */
+        .container {
+            width: 800px;
+            margin: 0px auto;
+            margin-top: 15px;
+        }
+
+        /* 复合选择器 */
+        .container .search {
+            width: 100%;
+            height: 52px;
+        }
+
+        .container .search input {
+            float: left;
+            /*设置框的属性*/
+            width: 600px;
+            height: 27px;
+            border: 3px solid skyblue;
+            /*设置边框边缘线*/
+            border-right: none;
+            padding-left: 10px;
+        }
+
+        .container .search button {
+            float: left;
+            width: 50px;
+            height: 33px;
+            background-color: #4e6ef2;
+            color: aliceblue;
+            font-size: medium;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+        }
+
+        .container .result {
+            width: 100%;
+        }
+
+        .container .result .item {
+            margin-top: 15px;
+        }
+
+        .container .result .item a {
+            display: block;
+            text-decoration: none;
+            /*去掉标题下划线*/
+            font-size: 20px;
+            /*设置标题字体大小*/
+            /* 设置标题字体颜色 */
+            color: #4e6ef2;
+        }
+
+        .container .result .item a:hover {
+            /* 设置鼠标放在文字上的动态效果 */
+            text-decoration: underline;
+        }
+
+        .container .result .item p {
+            font-size: 17px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin-top: 10px;
+        }
+
+        .container .result .item i {
+            display: block;
+            font-style: normal;
+            color: burlywood;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="search">
+            <input type="text" value="">
+            <button onclick="Search()">搜索</button>
+        </div>
+        <div class="result">
+            <!-- <div class="item">
+                <a href="#">这是标题</a>
+                <p>这是摘要这是摘要这是摘要这是摘要这是摘要这是摘要这是摘要这是摘要这是摘要</p>
+                <i>这是URL</i>
+            </div> -->
+        </div>
+    </div>
+    <script>
+        function Search() {
+            // alert("hello")
+            let query = $(".container .search input").val();
+            // console.log("query =" + query);
+            $.ajax({
+                type: "GET",
+                url: "/s?word=" + query,
+                success: function (data) {
+                    console.log(data);
+                    BuildHtml(data);
+                }
+            });
+        }
+        function BuildHtml(data) {
+            let result_table = $(".container .result");
+            result_table.empty();
+            for (let elem of data) {
+                let a_lable = $("<a>", {
+                    text: elem.title,
+                    href: elem.url,
+                    /*跳转*/
+                    target: "_blank"
+                });
+                let p_lable = $("<p>", {
+                    text: elem.content
+                });
+                let i_table = $("<i>", {
+                    text: elem.url
+                });
+                let div_lable = $("<div>", {
+                    class: "item"
+                });
+                a_lable.appendTo(div_lable);
+                p_lable.appendTo(div_lable);
+                i_table.appendTo(div_lable);
+                div_lable.appendTo(result_table);
+            }
+        }
+    </script>
+</body>
+
+</html>
