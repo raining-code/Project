@@ -1,9 +1,22 @@
-#include "httpServer.h"
-int main(int argc, char** argv) {
-    if (argc != 3) {
-        LOG(INFO, "输入要绑定的端口和全连接队列的最大长度");
-        exit(0);
-    }
-    HttpServer::Run();
+#include "../socketModule/tcpServer.h"
+#include "endPoint.h"
+#include "util.h"
+#include <algorithm>
+#include <fcntl.h>
+#include <fstream>
+int main() {
+    TcpServer server;
+    int fd = server.Accept();
+    EndPoint e(fd, server);
+    e.ReadHttpRequest();
+    // cout << e.request.requestline << endl;
+    // std::for_each(e.request.heads.begin(), e.request.heads.end(), [](const string& s) {
+    //     cout << s << endl;
+    // });
+    // cout << e.request.body << endl;
+    // cout << e.request.length << endl;
+    cout << e.request.method << endl;
+    cout << e.request.version << endl;
+    cout << e.request.uri << endl;
     return 0;
 }

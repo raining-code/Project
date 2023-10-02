@@ -1,0 +1,6 @@
+get /index.html HTTP/1.0
+Host:www.baidu.com
+User-Agent:Windows
+Content-Length:6
+
+abcdef

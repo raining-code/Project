@@ -5,6 +5,10 @@ TcpServer::TcpServer(uint16_t port, int QueueMax) {
         LOG(FATAL, "创建套接字失败");
         exit(0);
     }
+    if (!PortReuse()) {
+        LOG(FATAL, "端口复用失败");
+        exit(0);
+    }
     if (!Bind(port)) {
         LOG(FATAL, "绑定失败");
         exit(0);
@@ -16,6 +20,10 @@ TcpServer::TcpServer(uint16_t port, int QueueMax) {
 }
 int TcpServer::Socket() {
     return socket(AF_INET, SOCK_STREAM, 0);
+}
+bool TcpServer::PortReuse() {
+    int enable = 1;
+    return setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) == 0;
 }
 bool TcpServer::Bind(uint16_t port) {
     struct sockaddr_in serverAddr;
