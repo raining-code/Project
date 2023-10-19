@@ -1,30 +1,21 @@
-#pragma once
-#include<assert.h>
-#include<mutex>
-#include"ObjectPool.hpp"
-struct Span {//¹ÜÀíÒÔÒ³Îªµ¥Î»µÄÄÚ´æ
-	size_t pageid = 0;//ÄÚ´æµÄÆğÊ¼Ò³ºÅ
-	size_t n = 0;//Ò³µÄÊıÁ¿
-	Span* next = nullptr;
-	Span* prev = nullptr;
-	void* freelist = nullptr;//¹ÜÀíÇĞ·ÖºÃµÄÄÚ´æµÄ×ÔÓÉÁ´±í
-	size_t usecount = 0;//ÇĞºÃµÄÄÚ´æ,¸øThreadCacheÊ¹ÓÃµÄÊıÁ¿
-	bool isuse = false;//ÊÇ·ñ±»CentralCacheÊ¹ÓÃ
-	size_t objsize=0;//¶ÔÏóµÄ´óĞ¡
+//
+// Created by cat on 2023/10/19.
+//
+
+#ifndef HIGHCONCURRENTMEMORYPOOL_SPAN_H
+#define HIGHCONCURRENTMEMORYPOOL_SPAN_H
+
+#include <ctype.h>
+#include "FreeList.h"
+
+struct Span {
+    size_t pageid = 0;//èµ·å§‹é¡µå·
+    size_t n = 0;//é¡µçš„æ•°é‡
+    Span *next = nullptr;
+    Span *prev = nullptr;
+    FreeList freelist;//åˆ‡ä¸‹æ¥çš„å°å—å†…å­˜æŒ‚åˆ°freelistä¸­
+    size_t usecount = 0;
+    bool isuse = false;
+    size_t objsize = 0;
 };
-class SpanList {//CentralCacheÖĞµÄÃ¿Ò»¸öÔªËØÊÇSpanList
-public:
-	SpanList();
-	void Insert(Span* pos, Span* span);//posÎ»ÖÃÖ®Ç°²åÈëÒ»¸öÔªËØ
-	void Erase(Span* pos);//É¾³ıposÎ»ÖÃµÄÔªËØ
-	Span* Begin();
-	Span* End();
-	void PushFront(Span* span);//Í·²åÒ»¸ö¿ç¶È
-	bool Empty();
-	Span* PopFront();
-private:
-	Span* head = nullptr;
-	static ObjectPool<Span> spanpool;
-public:
-	std::mutex mtx;//¶à¸öÏß³Ì·ÃÎÊµ½CentralCacheÖĞµÄÍ¬Ò»¸öSpanListÊ±ĞèÒª¼ÓËø
-};
+#endif //HIGHCONCURRENTMEMORYPOOL_SPAN_H

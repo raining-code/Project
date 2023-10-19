@@ -1,18 +1,79 @@
-#pragma once
-#include<cassert>
-#include<iostream>
-#include"SystemAlloc.h"
+//
+// Created by cat on 2023/10/19.
+//
+
+#ifndef HIGHCONCURRENTMEMORYPOOL_FREELIST_H
+#define HIGHCONCURRENTMEMORYPOOL_FREELIST_H
+
+#include <cassert>
+#include "SystemPort.h"
+
 class FreeList {
 public:
-	void Push(void* obj);//²åÈë¶ÔÏóµ½×ÔÓÉÁ´±í
-	void* Pop();//´Ó×ÔÓÉÁ´±íÖÐÈ¡³ö¶ÔÏó
-	bool Empty();
-	void PushRange(void* start, void* end,size_t size);//size±íÊ¾PushRangeµÄ¸öÊý
-	size_t Size();
-	void PopRange(void*& start, void*& end, size_t popsize);
+    void push(void *obj);
+
+    void *pop();
+
+    bool empty();
+
+    void push_range(void *start, void *end, size_t size);
+
+    size_t size();
+
+    void pop_range(void *&start, void *&end, size_t size);
+
+    void clear();
+
 public:
-	size_t applycnt = 1;//ÉêÇë¶ÔÏóµÄ¸öÊý(Âý¿ªÊ¼µÄ·´À¡µ÷½ÚËã·¨)
+    size_t applycnt = 1;//ä¸‹ä¸€æ¬¡å‘Central cacheç”³è¯·çš„å†…å­˜å—æ•°é‡
 private:
-	size_t size = 0;
-	void* m_freelist = nullptr;
+    size_t count = 0;//è¡¨ç¤ºFreeListä¸‹æŒ‚çš„å†…å­˜å—çš„ä¸ªæ•°
+    void *freelist = nullptr;
 };
+
+inline void FreeList::push(void *obj) {
+    NextObj(obj) = freelist;
+    freelist = obj;
+    count++;
+}
+
+inline void *FreeList::pop() {
+    assert(freelist);
+    void *ans = freelist;
+    freelist = NextObj(freelist);
+    count--;
+    return ans;
+}
+
+inline bool FreeList::empty() {
+    return freelist == nullptr;
+}
+
+inline void FreeList::push_range(void *start, void *end, size_t size) {
+    NextObj(end) = freelist;
+    freelist = start;
+    count += size;
+}
+
+inline size_t FreeList::size() {
+    return count;
+}
+
+inline void FreeList::pop_range(void *&start, void *&end, size_t size) {
+    assert(count >= size);
+    count -= size;
+    start = end = freelist;
+    while (--size) {
+        end = NextObj(end);
+    }
+    freelist = NextObj(end);
+    NextObj(end) = nullptr;
+}
+
+inline void FreeList::clear() {
+    freelist = nullptr;
+    count=0;
+    applycnt=1;
+}
+
+#endif //HIGHCONCURRENTMEMORYPOOL_FREELIST_H

@@ -1,53 +1,57 @@
-#pragma once
-#include<iostream>
-#include<algorithm>
-#include"SystemAlloc.h"
+//
+// Created by cat on 2023/10/18.
+//
+
+#ifndef HIGHCONCURRENTMEMORYPOOL_OBJECTPOOL_HPP
+#define HIGHCONCURRENTMEMORYPOOL_OBJECTPOOL_HPP
+
+#include <iostream>
+#include <algorithm>
+#include "SystemPort.h"
+
 using std::cout;
 using std::endl;
-namespace TestStruct {
-	struct TreeNode {
-		TreeNode* left = nullptr;
-		TreeNode* right = nullptr;
-		int val = 0;
-		TreeNode() {
-			//cout << "TreeNode construct" << endl;
-		}
-		~TreeNode() {
-			//cout << "TreeNode destruct" << endl;
-		}
-	};
-}
-template<typename OBJ>
-class ObjectPool {
+
+template<typename T>
+class ObjectPool {//å®šé•¿å†…å­˜æ± 
 public:
-	//¶¨³¤ÄÚ´æ³Ø£¨¶ÔÏó³Ø£©
-	OBJ* New() {
-		if (m_freelist) {
-			OBJ* obj = (OBJ*)m_freelist;
-			new(obj)OBJ;//replacement new£¬µ÷ÓÃ¹¹Ôìº¯Êı
-			m_freelist = NextObj(m_freelist);
-			return obj;
-		}
-		size_t size = max(sizeof(void*), sizeof(OBJ));
-		if (m_remainbytes < size) {
-			m_memory = (char*)SystemAlloc(128);
-			m_remainbytes = 128 << 13;
-			return New();
-		}
-		//ÓĞ×ã¹»µÄ¿Õ¼ä
-		OBJ* obj = (OBJ*)m_memory;
-		new(obj)OBJ;//µ÷ÓÃ¹¹Ôìº¯Êı
-		m_memory += size;
-		m_remainbytes -= size;
-		return obj;
-	}
-	void Delete(OBJ* obj) {
-		obj->~OBJ();//µ÷ÓÃÎö¹¹º¯Êı
-		NextObj(obj) = m_freelist;
-		m_freelist = obj;
-	}
+    T *New() {
+        if (freelist) {
+            T *obj = (T *) freelist;
+            new(obj)T;//è°ƒç”¨æ„é€ å‡½æ•°
+            freelist = NextObj(freelist);
+            return obj;
+        }
+        size_t size = std::max(sizeof(void *), sizeof(T));
+        if (remainbytes < size) {
+            memory = (char *) SystemAlloc(128);
+            remainbytes = 128 << 13;
+            return New();
+        }
+        T *obj = (T *) memory;
+        new(obj)T;
+        memory += size;
+        remainbytes -= size;
+        return obj;
+    }
+
+    void Delete(T *obj) {
+        obj->~T();//è°ƒç”¨ææ„å‡½æ•°
+        NextObj(obj) = freelist;
+        freelist = obj;
+    }
+
 private:
-	char* m_memory = nullptr;//Ö¸Ïò´ó¿éÄÚ´æ
-	void* m_freelist = nullptr;//Ö¸ÏòÊÍ·ÅµÄÄÚ´æ¿é
-	size_t m_remainbytes = 0;//´ó¿éÄÚ´æÊ£Óà´óĞ¡
+    char *memory = nullptr;//å½“å‰æŒ‡å‘çš„å¤§å—å†…å­˜
+    void *freelist = nullptr;//é“¾æ¥è¿˜å›æ¥çš„å†…å­˜
+    size_t remainbytes = 0;//å½“å‰æŒ‡å‘çš„å¤§å—å†…å­˜è¿˜å‰©å¤šå°‘
 };
+
+class Span;
+
+inline ObjectPool<Span> spanpool;
+
+class ThreadCache;
+
+inline ObjectPool<ThreadCache> tcpool;
+#endif //HIGHCONCURRENTMEMORYPOOL_OBJECTPOOL_HPP

@@ -1,0 +1,3 @@
+D:/code/cpp/HighConcurrentMemoryPool/cmake-build-debug/CMakeFiles/HighConcurrentMemoryPool.dir
+D:/code/cpp/HighConcurrentMemoryPool/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/code/cpp/HighConcurrentMemoryPool/cmake-build-debug/CMakeFiles/rebuild_cache.dir

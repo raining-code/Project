@@ -1,25 +1,101 @@
-#pragma once
+//
+// Created by cat on 2023/10/19.
+//
+
+#ifndef HIGHCONCURRENTMEMORYPOOL_SIZECLASS_H
+#define HIGHCONCURRENTMEMORYPOOL_SIZECLASS_H
+
 #include<assert.h>
 #include<algorithm>
-#define PAGE_SHIFT 13 //2^13=8KB
-#define MAXBYTES 256*1024
+
+#define THREAD_CACHE_MAX_BYTES (256*1024) //thread cacheæ”¯æŒ<=256KBå†…å­˜çš„ç”³è¯·
+#define PAGE_SHIFT 13 //2^13=1é¡µ
+
+class SizeClass {
+public:
+    static size_t AlignedSize(size_t size);
+
+    static size_t Index(size_t size);
+
+    static size_t ApplyCnt(size_t alignsize);
+
+    static size_t ApplyPageNumber(size_t alignsize);
+
+private:
+    static int _index(size_t size, int alignshift);
+
+    static size_t _alignsize(size_t size, size_t alignnum);
+};
+
+//_alignsize(2,8):2å­—èŠ‚æŒ‰ç…§8å­—èŠ‚å¯¹é½->8å­—èŠ‚
+inline size_t SizeClass::_alignsize(size_t size, size_t alignnum) {
+    return ((size + alignnum - 1) & ~(alignnum - 1));
+}
+
+//_index:å·¥å…·å‡½æ•°,ç”¨æ¥è¾…åŠ©è®¡ç®—ä¸‹æ ‡
+inline int SizeClass::_index(size_t size, int alignshift) {
+    return ((size + (1 << alignshift) - 1) >> alignshift) - 1;
+}
+
 /*
-¶ÔÆë¹æÔò:
-×Ö½ÚÊı					¶ÔÆëÊı			¹şÏ£Í°ÏÂ±ê
+å¯¹é½è§„åˆ™:
 [1,128]					8bytes			[0,16)
 [129,1024]				16bytes			[16,72)
 [1025,8*1024]			128bytes		[72,128)
 [8*1024+1,64*1024]		1024bytes		[128,184)
 [64*1024+1,256*1024]	8*1024bytes		[184,208)
 */
-class SizeClass {
-public:
-	static size_t Align(size_t size, size_t alignnum);
-	static int Index(size_t size, int alignshift);//2^alignshift=¶ÔÆëÊı,¶ÔÆëÊıÊÇ2µÄ´Î·½
-	//¶ÔÆëÒÔºóµÄ×Ö½ÚÊı
-	static size_t AlignedSize(size_t size);
-	//¹şÏ£Í°ÏÂ±ê
-	static size_t HashBucketIndex(size_t size);
-	static size_t ApplyCnt(size_t alignsize);//ÉêÇëÊıÁ¿µÄÉÏÏŞºÍÏÂÏŞ
-	static size_t ApplyPageNumber(size_t alignsize);//CentralCacheÏòPageCache½øĞĞÉêÇëÊ±,ĞèÒªÉêÇë¶àÉÙÒ³
-};
+inline size_t SizeClass::AlignedSize(size_t size) {
+    if (size <= 128) {
+        return _alignsize(size, 8);
+    } else if (size <= 1024) {
+        return _alignsize(size, 16);
+    } else if (size <= 8 * 1024) {
+        return _alignsize(size, 128);
+    } else if (size <= 64 * 1024) {
+        return _alignsize(size, 1024);
+    } else if (size <= 256 * 1024) {
+        return _alignsize(size, 8 * 1024);
+    } else {//å¤§äº256KB,éƒ½æŒ‰ç…§ä¸€é¡µå¯¹é½
+        return _alignsize(size, 8 * 1024);
+    }
+}
+
+//è®¡ç®—åœ¨thread cacheçš„freelistsçš„å“ªä¸€ä¸ªä¸‹æ ‡
+inline size_t SizeClass::Index(size_t size) {
+    static constexpr int indexarray[] = {16, 56, 56, 56};
+    if (size <= 128) {
+        return _index(size, 3);//2^3=8
+    } else if (size <= 1024) {
+        return _index(size - 128, 4) + indexarray[0];//2^4=16
+    } else if (size <= 8 * 1024) {
+        return _index(size - 1024, 7) + indexarray[0] + indexarray[1];//2^7=128
+    } else if (size <= 64 * 1024) {
+        return _index(size - 8 * 1024, 10) + indexarray[0] + indexarray[1] + indexarray[2];;//2^10=1024
+    } else if (size <= 256 * 1024) {
+        return _index(size - 64 * 1024, 13) + indexarray[0] + indexarray[1] + indexarray[2] +
+               indexarray[3];//2^13=8*1024
+    } else {
+        assert(false);
+    }
+}
+
+//thread cacheå‘Central cacheä¸€æ¬¡è¦å¤šå°‘
+inline size_t SizeClass::ApplyCnt(size_t alignsize) {
+    int num = THREAD_CACHE_MAX_BYTES / alignsize;
+    if (num > 512) {
+        return 512;
+    } else if (num < 2) {
+        return 2;
+    } else {
+        return num;
+    }
+}
+
+//central cacheå‘page cacheè¦å¤šå°‘é¡µ
+inline size_t SizeClass::ApplyPageNumber(size_t alignsize) {
+    int num = ApplyCnt(alignsize);
+    return std::max<int>(1, (num * alignsize) >> PAGE_SHIFT);
+}
+
+#endif //HIGHCONCURRENTMEMORYPOOL_SIZECLASS_H
